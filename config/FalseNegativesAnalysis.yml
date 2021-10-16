@@ -1,0 +1,15 @@
+CapaTool:
+    FullPath: /home/giuseppe/Desktop/Capa_Tool/capa
+Repositories:
+    - Repository:
+        Name: AV1
+        FullPath: /home/giuseppe/Desktop/False_Negatives/AV1
+    - Repository:
+        Name: AV2
+        FullPath: /home/giuseppe/Desktop/False_Negatives/AV2
+    - Repository:
+        Name: AV3
+        FullPath: /home/giuseppe/Desktop/False_Negatives/AV3
+    - Repository:
+        Name: AV4
+        FullPath: /home/giuseppe/Desktop/False_Negatives/AV4
