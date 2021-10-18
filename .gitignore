@@ -33,9 +33,8 @@ MANIFEST
 *.manifest
 *.spec
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+# Ignore all .txt files
+*.txt
 
 # Unit test / coverage reports
 htmlcov/
@@ -122,8 +121,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-.dmypy.json
-dmypy.json
+
+# Ignore all .json files
+*.json
 
 # Pyre type checker
 .pyre/
