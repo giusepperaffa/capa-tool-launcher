@@ -54,7 +54,7 @@ class TestLauncherCls:
             print('--- %s ---' % Error)
             print('--- No report file will be generated ---')
     # === Method ===
-    def GetLinuxCmd(self):
+    def GetLinuxCmd(self, FileToProcName):
         # A list of strings containing the Linux commmand to be executed is build and returned
         # The Linux command timeout is used to avoid slowing down the analysis of large repositories
         LinuxCmdStrList = ['timeout', self.TimeOut + 'm']
@@ -62,21 +62,21 @@ class TestLauncherCls:
         # Unless a different format is specified in the configuration file, only ELF files will be analysed
         LinuxCmdStrList.extend([self.ConfigDict['CapaTool']['FullPath'], '-j', '-f', self.ConfigDict['CapaTool'].get('Format', 'elf')])
         # The full path of the file to be included is passed as input argument.
-
+        LinuxCmdStrList.extend([os.path.join(self.RepoDict['FullPath'], FileToProcName), '>', \
+            os.path.join(self.TestReportRepoFolderFullPath, os.path.splitext(FileToProcName)[0] + '.json')])
         return LinuxCmdStrList
-
     # === Method ===
     def PerformAnalysis(self):
         # Start analysing each repository specified in the configuration file
         print('--- Total number of repositories: {Num} ---'.format(Num=len(self.ConfigDict['Repositories'])))
         self.CreateTestSpecificFolder()
         for RepoElem in self.ConfigDict['Repositories']:
-            RepoDict = RepoElem['Repository']
+            self.RepoDict = RepoElem['Repository']
             print()
-            print('--- Processing repository {Repo} ---'.format(Repo=RepoDict['Name']))
-            self.CreateRepoSpecificFolder(RepoDict['Name'])
+            print('--- Processing repository {Repo} ---'.format(Repo=self.RepoDict['Name']))
+            self.CreateRepoSpecificFolder(self.RepoDict['Name'])
             # The following cycle processes all the files within the repository being processed
-            for FileNum, FileName in enumerate(os.listdir(RepoDict['FullPath'])):
+            for FileNum, FileName in enumerate(os.listdir(self.RepoDict['FullPath'])):
                 try:
                     print('--- Processing file number: {Num} ---'.format(Num=FileNum))
                     # The input argument check=True is used to raise an exception when the return
@@ -85,7 +85,7 @@ class TestLauncherCls:
                     # not work as expected in other version of the language. More recent versions
                     # of the subprocess module process additional input arguments, e.g. 'text' and
                     # 'capture_output', which are not supported in Python 3.6.9.
-                    AnalysisExecution = subprocess.run(self.GetLinuxCmd(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
+                    AnalysisExecution = subprocess.run(self.GetLinuxCmd(FileName), stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
                         universal_newlines=True, check=True)
                     print(AnalysisExecution.returncode) ## REMOVE AFTER DEBUGGING
                     print('--- Checking contents of generated JSON file... ---')
@@ -175,11 +175,6 @@ def ProcessProgramInputs():
         be processed according to the selected postprocessing type')
     # Return the Namespace object. It contains the parameters passed via command line
     return ParserObj.parse_args()
-
-def RemoveFilesFromFolder(FolderFullPath, FileExtension):
-    for Elem in (FltFile for FltFile in os.listdir(FolderFullPath) if FltFile.endswith(FileExtension)):
-        print('--- File {name} is about to be deleted ---'.format(name=Elem))
-        os.remove(os.path.join(FolderFullPath, Elem))
 
 # ====
 # Main
