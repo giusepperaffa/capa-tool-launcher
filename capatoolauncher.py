@@ -41,7 +41,7 @@ class TestLauncherCls:
         try:
             with open(SummaryReportFullPath, mode='w') as ReportFileObj:
                 # Summary dictionary keys are processed according to a customized order
-                for DictKey in ['Successful'] + sorted(lambda x: x != 'Successful' and x != 'Other', self.SummaryResultsDict) + ['Other']:
+                for DictKey in ['Successful'] + sorted(filter(lambda x: x != 'Successful' and x != 'Other', self.SummaryResultsDict)) + ['Other']:
                     ReportFileObj.write(self.DataSep.join([DictKey, self.SummaryResultsDict[DictKey]]) + '\n')
             print('--- Summary report file for repository {Repo} successfully generated ---'.format(Repo=self.RepoDict['Name']))
         except Exception as Error:
@@ -53,7 +53,7 @@ class TestLauncherCls:
     def GetLinuxCmd(self, FileToProcName):
         # A list of strings containing the Linux commmand to be executed is build and returned
         # The Linux command timeout is used to avoid slowing down the analysis of large repositories
-        LinuxCmdStrList = ['timeout', self.TimeOut + 'm']
+        LinuxCmdStrList = ['timeout', str(self.TimeOut) + 'm']
         # Add the full path of the capa tool (standalone binary) and and save the output in JSON format (-j option)
         # Unless a different format is specified in the configuration file, only ELF files will be analysed
         LinuxCmdStrList.extend([self.ConfigDict['CapaTool']['FullPath'], '-j', '-f', self.ConfigDict['CapaTool'].get('Format', 'elf')])
@@ -80,7 +80,7 @@ class TestLauncherCls:
             # The following cycle processes all the files within the repository being processed
             for FileNum, FileName in enumerate(os.listdir(self.RepoDict['FullPath'])):
                 try:
-                    print('--- Processing file number: {Num} ---'.format(Num=FileNum))
+                    print('--- Processing file number: {Num} ---'.format(Num=FileNum + 1))
                     # The input argument check=True is used to raise an exception when the return
                     # code of the shell command is not zero. Note that the following statement is
                     # compatible with the subprocess module included in Python 3.6.9, but it might
