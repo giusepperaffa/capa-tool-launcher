@@ -34,25 +34,20 @@ class TestLauncherCls:
         with open(os.path.join(self.ConfigFolderFullPath, self.ConfigObj.file), mode='r') as ConfigFileObj:
             self.ConfigDict = yaml.load(ConfigFileObj)
     # === Method ===
-    def GenerateReport(self):
-        # Create test execution-specific folder if it does not exist
-        TestFolderFullPath = os.path.join(self.ReportsFolderFullPath, 'test_' + self.TestExecId)
-        if not os.path.isdir(TestFolderFullPath): os.mkdir(TestFolderFullPath)
+    def GenerateSummaryReport(self):
+        # Create repository-specific test report file (*.txt) out of summary results dictionary
+        SummaryReportFullPath = os.path.join(self.TestReportFolderFullPath, 'Summary_Report_' + self.RepoDict['Name'] + '.txt')
         try:
-            # When a query returns no results, self.ResultsDict will not include a 'data' key
-            # and no report file will be generated
-            assert ('data' in self.ResultsDict), 'The result dictionary does not include the key: data'
-            # Start generation of report file (.txt)
-            with open(os.path.join(TestFolderFullPath, os.path.splitext(self.QueryFileName)[0] + '.txt') , mode='w') as ReportFileObj:
-                ReportFileObj.write(self.DataSep.join(['File', 'URL']) + '\n')
-                for NestedList in self.ResultsDict['data']:
-                    for DataDict in (FltDataDict for FltDataDict in NestedList if (('file' in FltDataDict) and ('url' in FltDataDict))):
-                        ReportFileObj.write(self.DataSep.join([DataDict['file'], DataDict['url']]) + '\n')
-            print('--- Report file successfully generated ---')
-        except AssertionError as Error:
-            print('--- Exception raised - Details: ---')
+            with open(SummaryReportFullPath, mode='w') as ReportFileObj:
+                # Summary dictionary keys are processed according to a customized order
+                for DictKey in ['Successful'] + sorted(lambda x: x != 'Successful' and x != 'Other', self.SummaryResultsDict) + ['Other']:
+                    ReportFileObj.write(self.DataSep.join([DictKey, self.SummaryResultsDict[DictKey]]) + '\n')
+            print('--- Summary report file for repository {Repo} successfully generated ---'.format(Repo=self.RepoDict['Name']))
+        except Exception as Error:
+            print('--- Exception raised while generating the summary report file for repository {Repo}- Details: ---'.format(\
+                Repo=self.RepoDict['Name']))
             print('--- %s ---' % Error)
-            print('--- No report file will be generated ---')
+            print('--- The summary report file might be incomplete or absent ---')
     # === Method ===
     def GetLinuxCmd(self, FileToProcName):
         # A list of strings containing the Linux commmand to be executed is build and returned
@@ -66,6 +61,11 @@ class TestLauncherCls:
             os.path.join(self.TestReportRepoFolderFullPath, os.path.splitext(FileToProcName)[0] + '.json')])
         return LinuxCmdStrList
     # === Method ===
+    def InitSummaryResultsDict(self):
+        # The summary results dict is the data structure that holds the high-level results
+        # obtained with a tested repository.
+        self.SummaryResultsDict = {'Successful': 0, 'Timed Out': 0, 'Other': 0}
+    # === Method ===
     def PerformAnalysis(self):
         # Start analysing each repository specified in the configuration file
         print('--- Total number of repositories: {Num} ---'.format(Num=len(self.ConfigDict['Repositories'])))
@@ -74,6 +74,7 @@ class TestLauncherCls:
             self.RepoDict = RepoElem['Repository']
             print()
             print('--- Processing repository {Repo} ---'.format(Repo=self.RepoDict['Name']))
+            self.InitSummaryResultsDict()
             self.CreateRepoSpecificFolder(self.RepoDict['Name'])
             # The following cycle processes all the files within the repository being processed
             for FileNum, FileName in enumerate(os.listdir(self.RepoDict['FullPath'])):
@@ -85,24 +86,68 @@ class TestLauncherCls:
                     # not work as expected in other version of the language. More recent versions
                     # of the subprocess module process additional input arguments, e.g. 'text' and
                     # 'capture_output', which are not supported in Python 3.6.9.
-                    AnalysisExecution = subprocess.run(self.GetLinuxCmd(FileName), stdout=subprocess.PIPE, stderr=subprocess.PIPE, \
-                        universal_newlines=True, check=True)
-                    print(AnalysisExecution.returncode) ## REMOVE AFTER DEBUGGING
+                    self.AnalysisExecution = subprocess.run(self.GetLinuxCmd(FileName), stdout=subprocess.PIPE, \
+                        stderr=subprocess.PIPE, universal_newlines=True, check=True)
+                    print('--- Returned exit code {Code} ---'.format(Code=self.AnalysisExecution.returncode))
                     print('--- Checking contents of generated JSON file... ---')
-                    # Checkk whether the dictionary extracted from the JSON file generated by Capa
+                    # Check whether the dictionary extracted from the JSON file generated by Capa
                     # is empty (unsuccessful analysis)
-
+                    with open(os.path.join(self.TestReportRepoFolderFullPath, os.path.splitext(FileName)[0] + '.json', mode='r') as ResultsFileObj:
+                        self.DetailResultsDict = json.load(ResultsFileObj)
                     print('--- Analysis successfully completed ---')
-                    self.SummaryResultsDict['Success'] += 1
+                    self.SummaryResultsDict['Successful'] += 1
+                except subprocess.CalledProcessError as Error:
+                    # This exception is raised when subprocess.run detects that an exit code
+                    # different from zero has been returned (e.g., end of timeout). Note that
+                    # the property .returncode cannot be used, as the object is not defined
+                    print('--- Exception raised - Details: ---')
+                    print('--- The executed shell command {Info} ---'.format(Info=re.findall(r'returned.*$', str(Error))[0]))
+                    self.SummaryResultsDict['Timed Out'] += 1
+                except json.decoder.JSONDecodeError as Error:
+                    # This exception is raised when the JSON file generated by the Capa Tool
+                    # is empty. Postprocessing of stdout is attempted to understand why the
+                    # analysis has failed
+                    print('--- Exception raised - Details: ---')
+                    print('--- %s ---' % Error)
+                    print('--- Processing standard output... ---')
+                    self.ProcessCapaToolLog()
                 except Exception as Error:
                     print('--- Exception raised - Details: ---')
                     print('--- %s ---' % Error)
-                    # The following code attempts to identify the reason why the analysis has failed
-
-
-
+                    # When the specific reason for the failed analysis is not identified,
+                    # the key 'Other' of the results data structure is used
+                    self.SummaryResultsDict['Other'] += 1
+            else:
+                # This code gets executed when the cycle over the files within a given
+                # repository ends without interruptions
+                self.GenerateSummaryReport()
+        else:
+            # This code gets executed when all the repositories have been analysed
+             print('--- Analysis ended on: {TimeStamp} ---'.format(TimeStamp=time.ctime()))
+    # === Method ===
+    def ProcessCapaToolLog(self):
+        try:
+            # The following regexp is used to process the standard output created
+            # by the execution of the Capa tool via shell command. The multiline
+            # flag is used to facilitate the extraction of information
+            InfoExtractRegExp = re.compile(r'^ERROR:capa:\s(.*)\.$', re.M)
+            InfoStrList = InfoExtractRegExp.findall(self.AnalysisExecution.stdout)
+            # When no information is extracted, findall returns an empty list and
+            # exception is raised (assert)
+            assert InfoStrList, '--- No detailed information was extracted from stdout ---'
+            # The following code updates the summary results data structure using
+            # the first extracted piece of information as dictionary key
+            try:
+                self.SummaryResultsDict[InfoStrList[0]] += 1
+            except KeyError as Error:
+                # The dictionary key needs to be initialized
+                self.SummaryResultsDict[InfoStrList[0]] = 1
+        except AssertionError as Error:
+            self.SummaryResultsDict['Other'] += 1
     # === Method ===
     def SetDefaultValues(self):
+        # Data separator (report files)
+        self.DataSep = '\t'
         # Test execution identifier for results folder
         TestExecIdRegExp = re.compile(r'(\s|:)')
         self.TestExecId = '_'.join(TestExecIdRegExp.sub('_', time.ctime().replace('  ', ' ')).split('_')[1:-1]).lower()
@@ -114,8 +159,6 @@ class TestLauncherCls:
         self.ReportsFolderFullPath = os.path.join(self.ProgramFolderFullPath, 'reports')
         # Create generic report folder if it does not exist
         if not os.path.isdir(self.ReportsFolderFullPath): os.mkdir(self.ReportsFolderFullPath)
-        # Init summary results dictionary
-        self.SummaryResultsDict = {'Success': 0, 'Other': 0}
         # Timeout parameter (minutes)
         self.TimeOut = 5
     # === Method ===
@@ -136,7 +179,6 @@ class TestLauncherCls:
             try:
                 self.RunConfigFileConsistencyChecks()
                 self.ExtractDictFromConfigFile()
-                print(self.ConfigDict) ## REMOVE AFTER DEBUGGING
                 self.PerformAnalysis()
             except Exception as Error:
                 print('--- Exception raised - Details: ---')
@@ -186,11 +228,11 @@ if __name__ == '__main__':
     # Include folder where custom modules are stored in the Python search path
     ModulesFolderName = 'modules'
     sys.path.append(os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), ModulesFolderName))
-    # # Import custom modules
-    # try:
-    #     import lgtmreslib
-    # except Exception as Error:
-    #     print('--- Exception raised while importing custom modules - Details: ---')
-    #     print('--- %s ---' % Error)
+    # Import custom modules
+    try:
+        import lgtmreslib
+    except Exception as Error:
+        print('--- Exception raised while importing custom modules - Details: ---')
+        print('--- %s ---' % Error)
     # Create instance of class TestLauncherCls which implements the program logic
     TestLauncherObj = TestLauncherCls(ProcessProgramInputs())
