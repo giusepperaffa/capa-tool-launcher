@@ -88,7 +88,7 @@ class TestLauncherCls:
                     # in Python 3.6.9.
                     self.AnalysisExecution = subprocess.run(' '.join(self.GetLinuxCmd(FileName)), shell=True, \
                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-                    print('--- Returned exit code {Code} ---'.format(Code=self.AnalysisExecution.returncode))
+                    print('--- Returned exit code: {Code} ---'.format(Code=self.AnalysisExecution.returncode))
                     if self.AnalysisExecution.returncode == 0:
                         print('--- Analysis successfully completed ---')
                         self.SummaryResultsDict['Successful'] += 1
@@ -135,6 +135,12 @@ class TestLauncherCls:
         except AssertionError as Error:
             self.SummaryResultsDict['Other'] += 1
     # === Method ===
+    def RunConfigFileConsistencyChecks(self):
+        # Perform all the consistency checks on the provided configuration file
+        assert os.path.splitext(self.ConfigObj.file)[1] in ('.yml', '.yaml'), 'The specified configuration file is not a YAML file'
+        assert os.path.isfile(os.path.join(self.ConfigFolderFullPath, self.ConfigObj.file)), \
+            'Configuration file does not exist in folder {FolderName}'.format(FolderName=self.ConfigFolderFullPath)
+    # === Method ===
     def SetDefaultValues(self):
         # Data separator (report files)
         self.DataSep = '\t'
@@ -151,12 +157,6 @@ class TestLauncherCls:
         if not os.path.isdir(self.ReportsFolderFullPath): os.mkdir(self.ReportsFolderFullPath)
         # Timeout parameter (minutes)
         self.TimeOut = 5
-    # === Method ===
-    def RunConfigFileConsistencyChecks(self):
-        # Perform all the consistency checks on the provided configuration file
-        assert os.path.splitext(self.ConfigObj.file)[1] in ('.yml', '.yaml'), 'The specified configuration file is not a YAML file'
-        assert os.path.isfile(os.path.join(self.ConfigFolderFullPath, self.ConfigObj.file)), \
-            'Configuration file does not exist in folder {FolderName}'.format(FolderName=self.ConfigFolderFullPath)
     # === Method ===
     def TestLauncherLogic(self):
         if self.ConfigObj.remove_results:
@@ -177,10 +177,30 @@ class TestLauncherCls:
             print('--- Postprocessing execution ---')
             print('--- Results folder: {ResultsFolder} ---'.format(ResultsFolder=self.ConfigObj.postprocessing[0]))
             print('--- Postprocessing type: {PostprocessingType} ---'.format(PostprocessingType=self.ConfigObj.postprocessing[1]))
+            try:
+                ConfigDict = {}
+                ConfigDict['ResultsFolderFullPath'] = os.path.join(self.ReportsFolderFullPath, self.ConfigObj.postprocessing[0])
+                ConfigDict['PostProcessingType'] = int(self.ConfigObj.postprocessing[1])
+                DataPostProcessingObj = capapostprocesslib.DataPostProcessingCls(ConfigDict)
+            except Exception as Error:
+                print('--- Exception raised - Details: ---')
+                print('--- %s ---' % Error)
         elif self.ConfigObj.complete:
             print('--- Analysis and postprocessing execution ---')
             print('--- Configuration file: {ConfigFile} ---'.format(ConfigFile=self.ConfigObj.complete[0]))
             print('--- Postprocessing type: {PostprocessingType} ---'.format(PostprocessingType=self.ConfigObj.complete[1]))
+            try:
+                # This assignment allows reusing code executed developed for the analysis-only execution mode
+                self.ConfigObj.file = self.ConfigObj.complete[0]
+                # Analysis execution
+                self.RunConfigFileConsistencyChecks()
+                self.ExtractDictFromConfigFile()
+                self.PerformAnalysis()
+                # Postprocessing execution
+                ConfigDict = {}
+                ConfigDict['ResultsFolderFullPath'] = self.TestReportFolderFullPath
+                ConfigDict['PostProcessingType'] = int(self.ConfigObj.complete[1])
+                DataPostProcessingObj = capapostprocesslib.DataPostProcessingCls(ConfigDict)
         else:
             print('--- The input arguments configuration is inconsistent - Execution interrupted ---')
 
