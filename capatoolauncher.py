@@ -201,6 +201,9 @@ class TestLauncherCls:
                 ConfigDict['ResultsFolderFullPath'] = self.TestReportFolderFullPath
                 ConfigDict['PostProcessingType'] = int(self.ConfigObj.complete[1])
                 DataPostProcessingObj = capapostprocesslib.DataPostProcessingCls(ConfigDict)
+            except Exception as Error:
+                print('--- Exception raised - Details: ---')
+                print('--- %s ---' % Error)
         else:
             print('--- The input arguments configuration is inconsistent - Execution interrupted ---')
 
