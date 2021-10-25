@@ -41,7 +41,7 @@ class DataPostProcessingCls:
         print('--- Method {Name} - Start ---'.format(Name=inspect.stack()[0][3]))
         with open(os.path.join(self.ResultsFolderFullPath, self.GetReportFileName()), mode='w') as ReportFileObj:
             for HighLevelCapability in sorted(self.ResultsDict):
-                ReportFileObj.write(self.DataSep.join[HighLevelCapability, self.ResultsDict[HighLevelCapability]] + '\n')
+                ReportFileObj.write(self.DataSep.join([HighLevelCapability, str(self.ResultsDict[HighLevelCapability])]) + '\n')
     # === Method ===
     def GenerateReportType2(self):
         print('--- Method {Name} - Start ---'.format(Name=inspect.stack()[0][3]))
@@ -67,7 +67,7 @@ class DataPostProcessingCls:
             for self.FileName in os.listdir(self.RepoFolderFullPath):
                 try:
                     print('--- The file {Name} is about to be processed ---'.format(Name=self.FileName))
-                    with open(os.path.join(), mode='r') as JSONFileObj:
+                    with open(os.path.join(self.RepoFolderFullPath, self.FileName), mode='r') as JSONFileObj:
                         try:
                             getattr(self, 'ExtractInfoFromJSONFile' + str(self.PostProcessingType))(json.load(JSONFileObj))
                         except Exception as Error:
@@ -96,7 +96,7 @@ class DataPostProcessingCls:
         self.DataSep = '\t'
         # List containing the full paths of all the repo-specific folders within
         # the results folder passed to the class constructor as input argument
-        self.RepoFoldersFullPathList = [Elem for Elem in os.list(self.ResultsFolderFullPath) \
+        self.RepoFoldersFullPathList = [os.path.join(self.ResultsFolderFullPath, Elem) for Elem in os.listdir(self.ResultsFolderFullPath) \
             if os.path.isdir(os.path.join(self.ResultsFolderFullPath, Elem))]
         # Check if the specified results folder includes repo-specific folders
         assert self.RepoFoldersFullPathList, 'The specified result folder does not contain repository-specific folders'
