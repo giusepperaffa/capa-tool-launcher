@@ -35,7 +35,7 @@ class DataPostProcessingCls:
                 try:
                     self.ResultsDict[self.FileName].append(JSONFileResultsDict['rules'][RuleKey]['meta']['namespace'])
                 except KeyError as Error:
-                    self.ResultsDict[self.FileName] = (JSONFileResultsDict['rules'][RuleKey]['meta']['namespace'])
+                    self.ResultsDict[self.FileName] = [JSONFileResultsDict['rules'][RuleKey]['meta']['namespace']]
     # === Method ===
     def GenerateReportType1(self):
         print('--- Method {Name} - Start ---'.format(Name=inspect.stack()[0][3]))
@@ -48,9 +48,10 @@ class DataPostProcessingCls:
         with open(os.path.join(self.ResultsFolderFullPath, self.GetReportFileName()), mode='w') as ReportFileObj:
             # A set comprehension is used to retrieve all the extracted capabilities.
             ExtractedCapabilityList = sorted({Capability for CapabilityList in self.ResultsDict.values() for Capability in CapabilityList})
+            ReportFileObj.write(self.DataSep.join(['Sample'] + ExtractedCapabilityList) + '\n')
             for ProcFileName in sorted(self.ResultsDict):
                 ReportFileObj.write(self.DataSep.join([ProcFileName] + \
-                    [(1 if (Capability in self.ResultsDict[ProcFileName]) else 0) for Capability in ExtractedCapabilityList]) + '\n')
+                    [str(1 if (Capability in self.ResultsDict[ProcFileName]) else 0) for Capability in ExtractedCapabilityList]) + '\n')
     # === Method ===
     def GetReportFileName(self):
         return '_'.join(['Postprocessing', 'Type', str(self.PostProcessingType), os.path.basename(self.RepoFolderFullPath) + '.txt'])
@@ -96,7 +97,7 @@ class DataPostProcessingCls:
         self.DataSep = '\t'
         # List containing the full paths of all the repo-specific folders within
         # the results folder passed to the class constructor as input argument
-        self.RepoFoldersFullPathList = [os.path.join(self.ResultsFolderFullPath, Elem) for Elem in os.listdir(self.ResultsFolderFullPath) \
-            if os.path.isdir(os.path.join(self.ResultsFolderFullPath, Elem))]
+        self.RepoFoldersFullPathList = sorted([os.path.join(self.ResultsFolderFullPath, Elem) for Elem in \
+            os.listdir(self.ResultsFolderFullPath) if os.path.isdir(os.path.join(self.ResultsFolderFullPath, Elem))])
         # Check if the specified results folder includes repo-specific folders
         assert self.RepoFoldersFullPathList, 'The specified result folder does not contain repository-specific folders'
