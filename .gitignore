@@ -36,6 +36,9 @@ MANIFEST
 # Ignore all .txt files
 *.txt
 
+# Ignore all .csv files
+*.csv
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
