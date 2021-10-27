@@ -1,13 +1,127 @@
 # ========================================
 # Import Python Modules (Standard Library)
 # ========================================
+import csv
 import inspect
 import json
 import os
+import re
 
 # =======
 # Classes
 # =======
+class ComparePostProcessingReportsCls:
+    # === Class constructor ===
+    def __init__(self, ConfigDict):
+        self.ResultsFolderFullPath = ConfigDict['ResultsFolderFullPath']
+        self.RunConsistencyChecks()
+        self.SetDefaultValues()
+        self.CompareReports()
+    # === Method ===
+    def CompareReports(self):
+        print('--- Method {Name} - Start ---'.format(Name=inspect.stack()[0][3]))
+        for FileNameStart in self.FileNameStartList:
+            print()
+            if FileNameStart == 'Postprocessing_Type_2':
+                # Customized processing needed due to the structure of the reports
+                # being processed. Temporary files are created to facilitate the
+                # processing and then deleted when they are no longer necessary
+                self.CreateTempFiles(FileNameStart)
+                self.CreateDataDictionary(self.GenTempFileCommonString)
+                self.CreateReport(FileNameStart)
+                self.DeleteTempFiles()
+            else:
+                self.CreateDataDictionary(FileNameStart)
+                self.CreateReport(FileNameStart)
+    # === Method ===
+    def CreateDataDictionary(self, FileNameStart):
+        # This method creates a nested dictionary that stores all the information
+        # extracted from the files identified via the input parameter string
+        print('--- Method {Name} - Start ---'.format(Name=inspect.stack()[0][3]))
+        self.DataDict = {}
+        for FileName in sorted(Elem for Elem in os.listdir(self.ResultsFolderFullPath) if \
+            (os.path.isfile(os.path.join(self.ResultsFolderFullPath, Elem)) and Elem.startswith(FileNameStart))):
+            print('--- File being processed: {Name} --- '.format(Name=FileName))
+            with open(os.path.join(self.ResultsFolderFullPath, FileName), mode='r') as CSVFileObj:
+                # Create CSV reader object
+                CSVReaderObj = csv.reader(CSVFileObj, delimiter='\t')
+                self.DataDict[FileName] = dict(RowList for RowList in CSVReaderObj)
+    # === Method ===
+    def CreateReport(self, FileNameStart):
+        print('--- Method {Name} - Start ---'.format(Name=inspect.stack()[0][3]))
+        # The extracted information will be stored in a CSV file
+        with open(os.path.join(self.ResultsFolderFullPath, '_'.join([FileNameStart, self.GenReportCommonString + '.csv']) ), \
+            mode='w') as ReportFileObj:
+            FieldNames = ['Description'] + sorted(self.DataDict)
+            CSVWriterObj = csv.DictWriter(ReportFileObj, fieldnames=FieldNames)
+            CSVWriterObj.writeheader()
+            # The following cycle writes into the generated CSV file line by line
+            for Description in self.GetDescriptions(FileNameStart):
+                RowDict = {'Description': Description}
+                RowDict.update(dict({(FileName, self.DataDict[FileName][Description] if (Description in self.DataDict[FileName]) else 0) \
+                    for FileName in sorted(self.DataDict)}))
+                CSVWriterObj.writerow(RowDict)
+    # === Method ===
+    def CreateTempFiles(self, FileNameStart):
+        print('--- Method {Name} - Start ---'.format(Name=inspect.stack()[0][3]))
+        # A regexp is used in this method to extract repository names from file names
+        ExtractRepoNameRegExp = re.compile(FileNameStart + '_(\w+)\.txt', re.I)
+        # Processing of all the required report files
+        for FileName in sorted(Elem for Elem in os.listdir(self.ResultsFolderFullPath) if \
+            (os.path.isfile(os.path.join(self.ResultsFolderFullPath, Elem)) and Elem.startswith(FileNameStart))):
+            print('--- File being processed: {Name} --- '.format(Name=FileName))
+            with open(os.path.join(self.ResultsFolderFullPath, FileName), mode='r') as ReportFileObj:
+                CSVReaderObj = csv.DictReader(ReportFileObj, delimiter='\t')
+                for LineNum, RowDict in enumerate(CSVReaderObj):
+                    # When the first line of the file is processed, a temporary dictionary is initialized
+                    if LineNum == 0: TempDict = dict((Key, 0) for Key in RowDict.keys() if Key != 'Sample')
+                    # Update the temporary dictionary by incrementing its values
+                    for Key in TempDict: TempDict[Key] += int(RowDict[Key])
+                else:
+                    # When this branch gets executed (i.e., end of previous for cycle) the
+                    # temporary dictionary contains keys that identify capabilities (strings)
+                    # and values that specify the total number of occurrences in the repository.
+                    # This information is saved in temporary files with names that depend on
+                    # the processed repository.
+                    TempFileName = '_'.join([self.GenTempFileCommonString, ExtractRepoNameRegExp.match(FileName).group(1) + '.txt'])
+                    with open(os.path.join(self.ResultsFolderFullPath, TempFileName), mode='w') as TempFileObj:
+                        CSVWriterObj = csv.writer(TempFileObj, delimiter='\t')
+                        for Key in sorted(TempDict):
+                            CSVWriterObj.writerow([Key, TempDict[Key]])
+    # === Method ===
+    def DeleteTempFiles(self):
+        print('--- Method {Name} - Start ---'.format(Name=inspect.stack()[0][3]))
+        for FileName in (Elem for Elem in os.listdir(self.ResultsFolderFullPath) if \
+            (os.path.isfile(os.path.join(self.ResultsFolderFullPath, Elem)) and Elem.startswith(self.GenTempFileCommonString))):
+            try:
+                os.remove(os.path.join(self.ResultsFolderFullPath, FileName))
+            except Exception as Error:
+                print('--- Exception raised while deleting the temporary file {TempFile} - Details: ---'.format(TempFile=FileName))
+                print('--- %s ---' % Error)
+    # === Method ===
+    def GetDescriptions(self, FileNameStart):
+        # This method extracts all the descriptions present in the first columns
+        # of the processed files. In one case, a dedicated sorting order is used
+        DescriptionsSet = {Key for FileSpecificDict in self.DataDict.values() for Key in FileSpecificDict}
+        if FileNameStart == 'Summary_Report':
+            return ['Successful'] + sorted(DescriptionsSet - {'Successful', 'Other'}) + ['Other']
+        else:
+            return sorted(DescriptionsSet)
+    # === Method ===
+    def RunConsistencyChecks(self):
+        # Check if the results folder specified as input exists
+        assert os.path.isdir(self.ResultsFolderFullPath), 'The specified result folder does not exist'
+    # === Method ===
+    def SetDefaultValues(self):
+        # The class finds the files that have to be compared (within the results
+        # folder) by using strings that identify the initial part of their names
+        self.FileNameStartList = ['Summary_Report', 'Postprocessing_Type_1', 'Postprocessing_Type_2']
+        # String added to the names of the report files generated by this class
+        self.GenReportCommonString = 'All_Repositories'
+        # String used to identify the temporary files created by this class
+        self.GenTempFileCommonString = 'Temp_File'
+
+# ========================================
 class DataPostProcessingCls:
     # === Class constructor ===
     def __init__(self, ConfigDict):
