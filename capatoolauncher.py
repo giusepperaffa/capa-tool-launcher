@@ -190,7 +190,7 @@ class TestLauncherCls:
             print('--- Configuration file: {ConfigFile} ---'.format(ConfigFile=self.ConfigObj.complete[0]))
             print('--- Postprocessing type: {PostprocessingType} ---'.format(PostprocessingType=self.ConfigObj.complete[1]))
             try:
-                # This assignment allows reusing code executed developed for the analysis-only execution mode
+                # This assignment allows reusing code developed for the analysis-only execution mode
                 self.ConfigObj.file = self.ConfigObj.complete[0]
                 # Analysis execution
                 self.RunConfigFileConsistencyChecks()
@@ -201,6 +201,16 @@ class TestLauncherCls:
                 ConfigDict['ResultsFolderFullPath'] = self.TestReportFolderFullPath
                 ConfigDict['PostProcessingType'] = int(self.ConfigObj.complete[1])
                 DataPostProcessingObj = capapostprocesslib.DataPostProcessingCls(ConfigDict)
+            except Exception as Error:
+                print('--- Exception raised - Details: ---')
+                print('--- %s ---' % Error)
+        elif self.ConfigObj.merge:
+            print('--- Existing test reports merge ---')
+            print('--- Results folder: {ResultsFolder} ---'.format(ResultsFolder=self.ConfigObj.merge))
+            try:
+                ConfigDict = {}
+                ConfigDict['ResultsFolderFullPath'] = os.path.join(self.ReportsFolderFullPath, self.ConfigObj.merge)
+                ComparePostProcessingReportsObj = capapostprocesslib.ComparePostProcessingReportsCls(ConfigDict)
             except Exception as Error:
                 print('--- Exception raised - Details: ---')
                 print('--- %s ---' % Error)
@@ -228,6 +238,9 @@ def ProcessProgramInputs():
         metavar=('file', 'postprocessingtype'), help='Complete execution - All files within \
         the repositories specified in the configuration file will be processed. The results will \
         be processed according to the selected postprocessing type')
+    ModeGroupParserObj.add_argument('-m', '--merge', action='store', type=str, metavar='resultsfolder', \
+        help='Existing test reports merge - Test reports within the specified folder are merged \
+        to facilitate comparison of processed repositories. New test report files are created')
     # Return the Namespace object. It contains the parameters passed via command line
     return ParserObj.parse_args()
 
