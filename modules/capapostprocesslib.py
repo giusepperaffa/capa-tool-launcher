@@ -133,13 +133,24 @@ class DataPostProcessingCls:
     # === Method ===
     def ExtractInfoFromJSONFile1(self, JSONFileResultsDict):
         print('--- Method {Name} - Start ---'.format(Name=inspect.stack()[0][3]))
-        # Code developed after analysing the structure of the capa-generated JSON file
+        # Code developed after analysing the structure of the capa-generated JSON file.
+        # To handle double entries in the JSON file, which would cause errors in the
+        # results dictionary, an auxiliary set storing the processed capabilities (full
+        # categorization provided by capa) is used
+        CapabilitySet = set()
         for RuleKey in JSONFileResultsDict['rules']:
             if 'namespace' in JSONFileResultsDict['rules'][RuleKey]['meta']:
-                try:
-                    self.ResultsDict[JSONFileResultsDict['rules'][RuleKey]['meta']['namespace'].split('/')[0]] += 1
-                except KeyError as Error:
-                    self.ResultsDict[JSONFileResultsDict['rules'][RuleKey]['meta']['namespace'].split('/')[0]] = 1
+                Capability = JSONFileResultsDict['rules'][RuleKey]['meta']['namespace']
+                if Capability not in CapabilitySet:
+                    # The string method split is used to extract the high level capability, i.e.,
+                    # the highest level of the categorization provided by capa
+                    try:
+                        self.ResultsDict[Capability.split('/')[0]] += 1
+                    except KeyError as Error:
+                        self.ResultsDict[Capability.split('/')[0]] = 1
+                    finally:
+                        # Add the processed capability to the capability set
+                        CapabilitySet.add(Capability)
     # === Method ===
     def ExtractInfoFromJSONFile2(self, JSONFileResultsDict):
         print('--- Method {Name} - Start ---'.format(Name=inspect.stack()[0][3]))
