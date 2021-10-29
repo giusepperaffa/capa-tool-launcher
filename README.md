@@ -7,7 +7,7 @@ The _capa-tool-launcher_ is a tool to launch the [Mandiant capa tool](https://ww
 # Main Features
 The _capa-tool-launcher_ relies on the capa standalone binary. While Mandiant provide their tool as a Python module as well, using the standalone binary is advantageous as it does not require any installation. In essence, the script `capatoolauncher.py`, which includes a command-line interface implemented with the Python Standard Library module `argparse`, allows executing the relevant binary by using the **Linux** shell. It should be observed that:
 
-* The tool was implemented and tested under Linux. Ubuntu Linux 18.04 LTS was used both for development and testing.
+* The tool was implemented and tested under **Linux**. Ubuntu Linux 18.04 LTS was used both for development and testing.
 * The tool is currently compatible with **Python version 3.6.9**.
 * The capa version **v3.0.2** was used during the latest tests conducted with the _capa-tool-launcher_.
 
@@ -23,7 +23,7 @@ The following known issues and limitations should be considered prior to startin
 * **Security**. To facilitate the redirection of the capa results to a JSON file, which is possible by calling the standalone binary with the `-j` option (automatically done by the _capa-tool-launcher_), `shell=True` was used in the interface towards the Linux shell (i.e., as input argument to the `subprocess` module function used to access the shell). This implies that the tool should **not** be used with an **unchecked** configuration file, as execution of arbitrary code is possible. Details about are the tool configuration file are provided as part of the description of the analysis execution mode.
 * **Python version**. More recent Python versions than the one used to develop and test the tool include an updated version of the Standard Library module `subprocess`. Consequently, it is **not** at all guaranteed that the current implementation of the _capa-tool-launcher_ works with these versions of the language.
 * **Timeout duration**. The duration of the above-mentioned timeout is currently set to 5 minutes. This parameter is **not** included in the configuration file. This is an improvement to be considered for future releases to allow users to further tailor their analysis set-up.
-* **Merge mode**. The tool cannot currently be launched in merge mode multiple times with the same target folder. The presence of previously generated merged reports, in fact, breaks the postprocessing code. Should re-running the tool in merge mode with the same target folder be necessary, then the merged reports will have to be deleted manually first.        
+* **Merge mode**. The tool **cannot** currently be launched in merge mode multiple times with the same target folder. The presence of previously generated merged reports, in fact, breaks the postprocessing code. Should re-running the tool in merge mode with the same target folder be necessary, then the merged reports will have to be deleted manually first.        
 
 # Execution Modes
 The purpose of this section is to illustrate the tool execution modes. The corresponding command-line options along with implementation strategies and limitations are described.
