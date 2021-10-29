@@ -1,5 +1,5 @@
 # Introduction
-The _capa-tool-launcher_ is a tool to launch the [Mandiant capa tool](https://www.mandiant.com/resources/capa-automatically-identify-malware-capabilities) for the analysis of multiple repositories, and to postprocess the obtained results. The _capa-tool-launcher_ is currently implemented as a python script (`capatoolauncher.py`) that makes use of a module (`capapostprocesslib.py`) containing classes developed for postprocessing-related tasks. Additional information on the most recent releases of the capa tool can be found in these blog posts:
+The _capa-tool-launcher_ is a tool to launch the [Mandiant capa tool](https://www.mandiant.com/resources/capa-automatically-identify-malware-capabilities) for the analysis of multiple repositories, and to postprocess the obtained results. The _capa-tool-launcher_ is currently implemented as a Python script (`capatoolauncher.py`) that makes use of a module (`capapostprocesslib.py`) containing classes developed for postprocessing-related tasks. Additional information on the most recent releases of the capa tool can be found in these blog posts:
 
 * [capa 2.0: Better, Stronger, Faster](https://www.mandiant.com/resources/capa-2-better-stronger-faster)
 * [ELFant in the Room – capa v3](https://www.fireeye.com/blog/threat-research/2021/09/elfant-in-the-room-capa-v3.html)
