@@ -67,6 +67,16 @@ class TestLauncherCls:
         # obtained with a tested repository.
         self.SummaryResultsDict = {'Successful': 0, 'Timed Out': 0, 'Other': 0}
     # === Method ===
+    def LogFileSetUp(self):
+        # This method sets up the log file containing information about the errors
+        # detected during the execution of the analysis with the capa tool. The
+        # created log file is tested repository-specific and its basename will be
+        # modified by concatenating the repository name
+        LogFileBaseName = 'Log_File_Errors'
+        LogFileFullPath = os.path.join(self.TestReportFolderFullPath, '_'.join([LogFileBaseName, self.RepoDict['Name']]) + '.log')
+        logging.basicConfig(filename=LogFileFullPath, filemode='w', level=logging.INFO, format='%(message)s')
+        logging.info(self.DataSep.join(['File', 'Error']))
+    # === Method ===
     def PerformAnalysis(self):
         # Start analysing each repository specified in the configuration file
         print('--- Total number of repositories: {Num} ---'.format(Num=len(self.ConfigDict['Repositories'])))
@@ -77,6 +87,7 @@ class TestLauncherCls:
             print('--- Processing repository {Repo} ---'.format(Repo=self.RepoDict['Name']))
             self.InitSummaryResultsDict()
             self.CreateRepoSpecificFolder(self.RepoDict['Name'])
+            self.LogFileSetUp()
             # The following cycle processes all the files within the repository being processed
             for FileNum, FileName in enumerate(os.listdir(self.RepoDict['FullPath'])):
                 try:
@@ -95,10 +106,14 @@ class TestLauncherCls:
                     elif self.AnalysisExecution.returncode == 124:
                         print('--- Analysis timed out ---')
                         self.SummaryResultsDict['Timed Out'] += 1
+                        # Add entry to log file
+                        logging.info(self.DataSep.join([FileName, 'Timed Out']))
                     elif self.AnalysisExecution.returncode == 255:
                         print('--- Analysis execution ended with an error ---')
                         print('--- Processing standard error... ---')
-                        self.ProcessCapaToolLog()
+                        LogFileInfo = self.ProcessCapaToolLog()
+                        # Add entry to log file
+                        logging.info(self.DataSep.join([FileName, LogFileInfo]))
                     else:
                         raise ValueError('--- Unrecognized exit code ---')
                 except Exception as Error:
@@ -107,6 +122,8 @@ class TestLauncherCls:
                     # When the specific reason for the failed analysis is not identified,
                     # the key 'Other' of the results data structure is used
                     self.SummaryResultsDict['Other'] += 1
+                    # Add entry to log file
+                    logging.info(self.DataSep.join([FileName, 'Other']))
             else:
                 # This code gets executed when the cycle over the files within a given
                 # repository ends without interruptions
@@ -132,8 +149,12 @@ class TestLauncherCls:
             except KeyError as Error:
                 # The dictionary key needs to be initialized
                 self.SummaryResultsDict[InfoStrList[0]] = 1
+            finally:
+                SummaryResultsDictEntry = InfoStrList[0]
         except AssertionError as Error:
             self.SummaryResultsDict['Other'] += 1
+            SummaryResultsDictEntry = 'Other'
+        return SummaryResultsDictEntry
     # === Method ===
     def RunConfigFileConsistencyChecks(self):
         # Perform all the consistency checks on the provided configuration file
