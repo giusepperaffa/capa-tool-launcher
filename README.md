@@ -29,7 +29,7 @@ The following known issues and limitations should be considered prior to startin
 The purpose of this section is to illustrate the tool execution modes. The corresponding command-line options along with implementation strategies and limitations are described.
 
 ## Remove Results Mode
-The tool generates a set of report files (`*.txt` and `*.csv` files) within a dedicated folder called `reports`. Each test execution creates a subfolder with a timestamp (e.g., `test_oct_25_17_48_43`), so results obtained with different tests can easily be distinguished. To delete the contents of the `reports` folder, launch the tool with the `-r` option, as shown in this example:
+The tool generates a set of report files (`*.txt` and `*.csv` files) and log files (`*.log` files) within a dedicated folder called `reports`. Each test execution creates a subfolder with a timestamp (e.g., `test_oct_25_17_48_43`), so results obtained with different tests can easily be distinguished. To delete the contents of the `reports` folder, launch the tool with the `-r` option, as shown in this example:
 
 * `python3 capatoolauncher.py -r`  
 
@@ -43,7 +43,12 @@ As shown in the provided template, a configuration file must be stored in the `c
 * Information about the capa standalone binary. Within the entry dedicated to it, the tag `Format` can be specified as well. This allows executing the capa tool with a specific file format option (see [capa documentation](https://www.mandiant.com/resources/capa-automatically-identify-malware-capabilities) for more details). The default file format for the _capa-tool-launcher_ is ELF, which means executing capa with the option `-f elf`.
 * Information about the repositories containing the files to be processed. The repository names will be used to identify the generated report files and to create dedicated subfolders within the test execution-specific folder contained in `reports`.       
 
-It is finally worth noting that the tool automatically launches capa with the `-j` option, which means that the information about the capabilities detected in a processed file is provided in JSON format. In addition, a summary test report (`.txt` file) is created for each tested repository. No detailed file-level information though is included in the summary report.     
+It is also worth noting that the tool automatically launches capa with the `-j` option, which means that the information about the capabilities detected in a processed file is provided in JSON format.
+
+Finally, for each tested repository:
+
+* A summary test report (`.txt` file) is created. No detailed file-level information though is included in the summary report.
+* A log file (`.log` file) is generated. Only information about the files that were **not** successfully processed by capa is included.
 
 ## Postprocessing Mode
 The _capa-tool-launcher_ currently supports two distinct postprocessing modes, which are identified with the numbers 1 and 2. The tool will typically be launched in postprocessing mode (`-p`) after completing an execution in analysis mode. This is an example of execution in postprocessing mode, which requires the test execution-specific folder as well as the type of postprocessing:  
@@ -60,7 +65,7 @@ The complete execution mode (`-c`) enables the user to chain together the analys
 * `python3 capatoolauncher.py -c FalseNegativesAnalysis.yml 1`
 
 ## Merge Mode
-The analysis and the postprocessing modes generate reports that are tested repository-specific. However, researchers and analysts might well need to compare the results obtained with different repositories. To facilitate this process, the merge mode (`-m`) allows creating CSV files (*csv) that assemble information extracted from the repository-specific reports. This is an example of merge execution mode, which requires the test execution-specific folder:
+The analysis and the postprocessing modes generate reports that are tested repository-specific. However, researchers and analysts might well need to compare the results obtained with different repositories. To facilitate this process, the merge mode (`-m`) allows creating CSV files (`*.csv`) that assemble information extracted from the repository-specific reports. This is an example of merge execution mode, which requires the test execution-specific folder:
 
 * `python3 capatoolauncher.py -m test_oct_25_17_48_43`
 
