@@ -5,7 +5,11 @@ The _capa-tool-launcher_ is a tool to launch the [Mandiant capa tool](https://ww
 * [ELFant in the Room – capa v3](https://www.fireeye.com/blog/threat-research/2021/09/elfant-in-the-room-capa-v3.html)
 
 # Main Features
-The _capa-tool-launcher_ relies on the capa standalone binary. While Mandiant provide their tool as a Python module as well, using the standalone binary is advantageous as it does not require any installation. In essence, the script `capatoolauncher.py`, which includes a command-line interface implemented with the Python Standard Library module `argparse`, allows executing the relevant binary by using the **Linux** shell. It should be observed that:
+The _capa-tool-launcher_ relies on the capa standalone binary, which can be executed as illustrated in the following figure.
+
+![Figure 1](images/SuccessfulAnalysis.png)
+
+While Mandiant provide their tool as a Python module as well, using the standalone binary is advantageous as it does not require any installation. In essence, the script `capatoolauncher.py`, which includes a command-line interface implemented with the Python Standard Library module `argparse`, allows executing the relevant binary by using the **Linux** shell. It should be observed that:
 
 * The tool was implemented and tested under **Linux**. Ubuntu Linux 18.04 LTS was used both for development and testing.
 * The tool is currently compatible with **Python version 3.6.9**.
