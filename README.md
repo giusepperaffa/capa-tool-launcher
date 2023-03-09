@@ -1,3 +1,6 @@
+# Research Paper
+The tool in this repository was developed as part of a project conducted at the Royal Holloway University of London [Centre for Doctoral Training in Cyber Security](https://www.royalholloway.ac.uk/research-and-teaching/departments-and-schools/information-security/studying-here/centre-for-doctoral-training-in-cyber-security-for-the-everyday). For further information, please refer to the paper [Evaluating Anti-Virus Effectiveness in Linux](https://doi.org/10.1109/BigData55660.2022.10020475), which was presented at _The 6th International Workshop on Big Data Analytic for Cyber Crime Investigation and Prevention_ (IEEE International Conference on Big Data 2022). 
+
 # Introduction
 The _capa-tool-launcher_ is a tool to launch the [Mandiant capa tool](https://www.mandiant.com/resources/capa-automatically-identify-malware-capabilities) for the analysis of multiple repositories, and to postprocess the obtained results. The _capa-tool-launcher_ is currently implemented as a Python script (`capatoolauncher.py`) that makes use of a module (`capapostprocesslib.py`) containing classes developed for postprocessing-related tasks. Additional information on the most recent releases of the capa tool can be found in these blog posts:
 
